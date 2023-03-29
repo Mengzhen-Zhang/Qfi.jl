@@ -3,6 +3,12 @@ uuid = "12169f9e-7617-402c-85ad-a682c729e3c5"
 authors = ["Mengzhen Zhang"]
 version = "1.0.0-DEV"
 
+[deps]
+ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+IterativeSolvers = "42fd0dbc-a981-5370-80f2-aaf504508153"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+QuantumOptics = "6e0679c1-51ea-5a7c-ac74-d61b76210b0c"
+
 [compat]
 julia = "1"
 
