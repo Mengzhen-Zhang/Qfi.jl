@@ -13,6 +13,10 @@ import LinearAlgebra: I
 
 export steadyState, diffSteadyState, sld, qfi
 
+abstract type AbstractPhySys end
+liouv(phy::AbstractPhySys)::Function = identity
+dliouv(phy::AbstractPhySys)::Function = identity
+
 function steadyState(lθ::SuperOperator)
     M = length(lθ.basis_l[1])
     x0 = similar(lθ.data, M^2+1)
