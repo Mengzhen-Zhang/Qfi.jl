@@ -52,6 +52,11 @@ diffSld(ρθ::AbstractOperator, dρθ::AbstractOperator, d2ρθ::AbstractOperato
     _solve((spre(ρθ) + spost(ρθ))/2.0;
            bop=d2ρθ-(dρθ*SLD + SLD*dρθ)/2.0)
 
+qfi(ρθ::AbstractOperator, SLD::AbstractOperator) = real(tr(ρθ * SLD * SLD))
+
+dqfi(ρθ::AbstractOperator, dρθ::AbstractOperator, SLD::AbstractOperator, dSLD::AbstractOperator) =
+    real(tr(dρθ*SLD*SLD + ρθ*(SLD*dSLD+dSLD*SLD)))
+
 """
     qfi(θ::Real, liouv::Function, dliouv::Function, d2liouv::Funciton; indices=nothing)
     qfi(θ::Real, liouv::Function, dliouv::Function; indices=nothing)
@@ -91,8 +96,8 @@ function qfi(θ::Real, liouv::Function, dliouv::Function, d2liouv::Function;
     SLD = sld(ρθ, dρθ)
     dSLD = diffSld(ρθ, dρθ, d2ρθ, SLD)
 
-    QFI = real(tr(ρθ * SLD * SLD))
-    dQFI = real(tr(dρθ*SLD*SLD) + tr(ρθ*SLD*dSLD) + tr(ρθ*dSLD*SLD))
+    QFI = qfi(ρθ, SLD)
+    dQFI = dqfi(ρθ, dρθ, SLD, dSLD)
 
     prec_SLD = hs_norm((spre(ρθ)*SLD + spost(ρθ)*SLD)/2.0-dρθ)
     prec_dSLD = hs_norm((spre(ρθ)*dSLD + spost(ρθ)*dSLD)/2.0
@@ -110,5 +115,6 @@ end
 
 qfi(θ::Real, liouv::Function, dliouv::Function; indices=nothing)=
     qfi(θ, liouv, dliouv, θ->(0*dliouv(θ)); indices=indices)
+
 
 end
