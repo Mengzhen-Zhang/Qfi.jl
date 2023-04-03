@@ -65,7 +65,7 @@ The output is a dictionary with the following keys:
 'qfi': the value of quantum fisher information
 'dqfi': the value of the derivative of the quantum fisher information
 'prec_ss': the precision of the steady state
-'prec_dss': the precision of the derivative of the steady state
+'prec_dsld': the precision of the derivative of the steady state
 'prec_sld': the precision of the symmetric logarithmic derivative (SLD)
 'prec-dsld': the precision of the derivative of the SLD
 """
