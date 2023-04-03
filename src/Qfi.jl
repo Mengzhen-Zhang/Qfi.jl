@@ -53,12 +53,21 @@ diffSld(ρθ::AbstractOperator, dρθ::AbstractOperator, d2ρθ::AbstractOperato
            bop=d2ρθ-(dρθ*SLD + SLD*dρθ)/2.0)
 
 """
-    qfi(θ::Real, liouv::Function, dliouv::Function; indices=nothing, n_sld::Integer=2)
+    qfi(θ::Real, liouv::Function, dliouv::Function, d2liouv::Funciton; indices=nothing)
+    qfi(θ::Real, liouv::Function, dliouv::Function; indices=nothing)
 
 Calculate quantun fisher information given SuperOperator-valued functions `liouv` and `dliouv`.
-`liouv` defines the Liouvillian and `dliouv` defines its derivative. `indices` is the same as
-that in `ptrace`. `n_sld` is used to stableize the calculation of the symmetric logarithmic
-derivative
+`liouv` defines the Liouvillian, `dliouv` defines its derivative, `d2lioub` defines its second.
+`indices` is the same as in `ptrace`. Without specificaiton, d2liouv is the zero operator.
+
+The output is a dictionary with the following keys:
+
+'qfi': the value of quantum fisher information
+'dqfi': the value of the derivative of the quantum fisher information
+'prec_ss': the precision of the steady state
+'prec_dsld': the precision of the derivative of the steady state
+'prec_sld': the precision of the symmetric logarithmic derivative (SLD)
+'prec-dsld': the precision of the derivative of the SLD
 """
 function qfi(θ::Real, liouv::Function, dliouv::Function, d2liouv::Function;
              indices=nothing)
