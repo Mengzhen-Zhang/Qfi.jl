@@ -5,34 +5,34 @@ import QuantumOptics:
        dagger, spre, spost, ptrace
 import QuantumOptics.QuantumOpticsBase: 
        SuperOperator, AbstractOperator, Operator
-import IterativeSolvers: bicgstabl
+import IterativeSolvers: bicgstabl!
 import ChainRulesCore:
        frule, rrule
 import LinearAlgebra
-import LinearAlgebra: I
+import LinearAlgebra: I, tr
 
-export steadyState, diffSteadyState, sld, qfi
+export qfi
 
-abstract type AbstractPhySys end
-liouv(phy::AbstractPhySys)::Function = identity
-dliouv(phy::AbstractPhySys)::Function = identity
-
+hs_norm(A) = tr(A*dagger(A))
 dim_hilbert(sop::SuperOperator) = length(sop.basis_l[begin])
 
-function _solve(sop::SuperOperator; 
+function _solve(
+    sop::SuperOperator; 
     bop::AbstractOperator = Operator(
         sop.basis_l[begin], sop.basis_l[begin+1],
-        similar(sop.data, dim_hilbert(sop)^2)),
+        similar(sop.data, dim_hilbert(sop), dim_hilbert(sop))),
     xin::AbstractArray=1e-6 * rand(eltype(sop.data), dim_hilbert(sop)^2), 
-    is_herm::Bool=true, is_tp::Bool=false, trace=0)
+    is_herm::Bool=true,
+    is_tp::Bool=false,
+    trace=0)
     M = dim_hilbert(sop)
-    b = reshape(bop.data, dim_hilbert(lθ)^2)
+    b = reshape(bop.data, dim_hilbert(sop)^2)
     dtype = eltype(sop.data)
     x0 = [is_tp ? trace*one(dtype) - sum(xin[begin+1:end-1]) : 1e-6*rand(dtype); xin]
     y = [b ; is_tp ? trace*one(dtype) : zero(dtype)]
     lm = [sop.data  similar(sop.data, M^2); 
           permutedims([(i ÷ M + 1) == i % M && is_tp ? one(dtype) : zero(dtype) for i in 1:M^2+1])]
-    svec = bicgstabl(x0, lm, y)[1:end-1] # Super vector
+    svec = bicgstabl!(x0, lm, y)[1:end-1]  # Super vector
     op = Operator(sop.basis_l[begin], sop.basis_l[begin+1], reshape(svec, (M, M)))
     is_herm ? (op + dagger(op))/2.0 : op
 end
@@ -42,7 +42,15 @@ steadyState(lθ::SuperOperator) = _solve(lθ; is_tp=true, trace=1)
 diffSteadyState(lθ::SuperOperator, dlθ::SuperOperator, ρθ::AbstractOperator) = 
     _solve(lθ; bop=-dlθ*ρθ, is_tp=true, trace=0)
 
+diff2SteadyState(lθ::SuperOperator, dlθ::SuperOperator, d2lθ::SuperOperator,
+                 ρθ::AbstractOperator, dρθ::AbstractOperator) =
+                     _solve(lθ; bop=-(d2lθ*ρθ + 2*dlθ*dρθ), is_tp=true, trace=0)
+
 sld(ρθ::AbstractOperator, dρθ::AbstractOperator) = _solve((spre(ρθ) + spost(ρθ))/2.0; bop=dρθ)
+
+diffSld(ρθ::AbstractOperator, dρθ::AbstractOperator, d2ρθ::AbstractOperator, SLD::AbstractOperator) =
+    _solve((spre(ρθ) + spost(ρθ))/2.0;
+           bop=d2ρθ-(dρθ*SLD + SLD*dρθ)/2.0)
 
 """
     qfi(θ::Real, liouv::Function, dliouv::Function; indices=nothing, n_sld::Integer=2)
@@ -52,40 +60,46 @@ Calculate quantun fisher information given SuperOperator-valued functions `liouv
 that in `ptrace`. `n_sld` is used to stableize the calculation of the symmetric logarithmic
 derivative
 """
-function qfi(θ::Real, liouv::Function, dliouv::Function; indices=nothing)
-    lθ = liouv(θ)                                         # SuperOperator
-    dlθ = dliouv(θ)                                       # SuperOperator
+function qfi(θ::Real, liouv::Function, dliouv::Function, d2liouv::Function;
+             indices=nothing)
+    lθ = liouv(θ)
+    dlθ = dliouv(θ)
+    d2lθ = d2liouv(θ)
 
     ρθ = steadyState(lθ)
-    
     dρθ = diffSteadyState(lθ, dlθ, ρθ)
+    d2ρθ = diff2SteadyState(lθ, dlθ, d2lθ, ρθ, dρθ)
+
+    prec_ρθ = hs_norm(lθ*ρθ)
+    prec_dρθ = hs_norm(dlθ*ρθ+lθ*dρθ)
 
     if !(indices === nothing)
         ρθ = ptrace(ρθ, indices)
         dρθ = ptrace(dρθ, indices)
+        d2ρθ = ptrace(d2ρθ, indices)
     end
 
-    sld = sld(ρθ, dρθ)
+    SLD = sld(ρθ, dρθ)
+    dSLD = diffSld(ρθ, dρθ, d2ρθ, SLD)
 
-    return real(tr(ρθ * sld * sld))
+    QFI = real(tr(ρθ * SLD * SLD))
+    dQFI = real(tr(dρθ*SLD*SLD) + tr(ρθ*SLD*dSLD) + tr(ρθ*dSLD*SLD))
+
+    prec_SLD = hs_norm((spre(ρθ)*SLD + spost(ρθ)*SLD)/2.0-dρθ)
+    prec_dSLD = hs_norm((spre(ρθ)*dSLD + spost(ρθ)*dSLD)/2.0
+                        + (spre(dρθ)*SLD + spost(dρθ)*SLD)/2.0 - d2ρθ)
+ 
+    return Dict{Any, Any}(
+        "qfi" => QFI,
+        "dqfi" => dQFI,
+        "prec_ss" => prec_ρθ,
+        "prec_dss" => prec_dρθ,
+        "prec_sld" => prec_SLD,
+        "prec_dsld" => prec_dSLD
+    )
 end
 
-macro define(liouv, dliouv, indices)
-    ss_expr = !(indices === nothing) ? 
-              :(ss = (θ -> ptrace(steadyState(liouv(θ)), $indices))) :
-              :(ss = (θ -> steadyState(liouv(θ))))
-    dss_expr = !(indices === nothing) ?
-        :(dss = (θ -> ptrace(diffSteadyState($liouv(θ), $dliouv(θ), ss(θ)), $indices))) :
-        :(dss = (θ -> diffSteadyState($liouv(θ), $dliouv(θ), ss(θ))))
-    return quote
-        $ss_expr
-        $dss_expr
-        frule((_, Δx), ::typeof(ss), x) = (ss(x), dss(x)*Δx)
-        rrule(::typeof(ss), θ) = begin
-            ss_pullback(Δy) = (NoTangent(),  dss(x) * Δy)
-            return ss(θ), ss_pullback
-        end
-    end
-end
+qfi(θ::Real, liouv::Function, dliouv::Function; indices=nothing)=
+    qfi(θ, liouv, dliouv, θ->(0*dliouv(θ)); indices=indices)
 
 end
