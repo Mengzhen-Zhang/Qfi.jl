@@ -24,7 +24,8 @@ function _solve(
     xin::AbstractArray=1e-6 * rand(eltype(sop.data), dim_hilbert(sop)^2), 
     is_herm::Bool=true,
     is_tp::Bool=false,
-    trace=0)
+    trace=0,
+    max_mv_products=10000)
     M = dim_hilbert(sop)
     b = reshape(bop.data, dim_hilbert(sop)^2)
     dtype = eltype(sop.data)
@@ -32,7 +33,7 @@ function _solve(
     y = [b ; is_tp ? trace*one(dtype) : zero(dtype)]
     lm = [sop.data  similar(sop.data, M^2); 
           permutedims([(i ÷ M + 1) == i % M && is_tp ? one(dtype) : zero(dtype) for i in 1:M^2+1])]
-    svec = bicgstabl!(x0, lm, y)[1:end-1]  # Super vector
+    svec = bicgstabl!(x0, lm, y; max_mv_products=max_mv_products)[1:end-1]  # Super vector
     op = Operator(sop.basis_l[begin], sop.basis_l[begin+1], reshape(svec, (M, M)))
     is_herm ? (op + dagger(op))/2.0 : op
 end
