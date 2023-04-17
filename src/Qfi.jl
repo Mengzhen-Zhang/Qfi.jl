@@ -83,7 +83,7 @@ function qfi(θ::Real, liouv::Function, dliouv::Function, d2liouv::Function;
 
     ρθ = steadyState(lθ)
     dρθ = diffSteadyState(lθ, dlθ, ρθ)
-    d2ρθ = diff2SteadyState(lθ, dlθ, d2lθ, ρθ, dρθ)
+    # d2ρθ = diff2SteadyState(lθ, dlθ, d2lθ, ρθ, dρθ)
 
     prec_ρθ = hs_norm(lθ*ρθ)
     prec_dρθ = hs_norm(dlθ*ρθ+lθ*dρθ)
@@ -91,26 +91,26 @@ function qfi(θ::Real, liouv::Function, dliouv::Function, d2liouv::Function;
     if !(indices === nothing)
         ρθ = ptrace(ρθ, indices)
         dρθ = ptrace(dρθ, indices)
-        d2ρθ = ptrace(d2ρθ, indices)
+        # d2ρθ = ptrace(d2ρθ, indices)
     end
 
     SLD = sld(ρθ, dρθ)
-    dSLD = diffSld(ρθ, dρθ, d2ρθ, SLD)
+    # dSLD = diffSld(ρθ, dρθ, d2ρθ, SLD)
 
     QFI = qfi(ρθ, SLD)
-    dQFI = dqfi(ρθ, dρθ, SLD, dSLD)
+    # dQFI = dqfi(ρθ, dρθ, SLD, dSLD)
 
     prec_SLD = hs_norm((spre(ρθ)*SLD + spost(ρθ)*SLD)/2.0-dρθ)
-    prec_dSLD = hs_norm((spre(ρθ)*dSLD + spost(ρθ)*dSLD)/2.0
-                        + (spre(dρθ)*SLD + spost(dρθ)*SLD)/2.0 - d2ρθ)
+    # prec_dSLD = hs_norm((spre(ρθ)*dSLD + spost(ρθ)*dSLD)/2.0
+    #                     + (spre(dρθ)*SLD + spost(dρθ)*SLD)/2.0 - d2ρθ)
  
     return Dict{Any, Any}(
         "qfi" => QFI,
-        "dqfi" => dQFI,
-        "prec_ss" => prec_ρθ,
-        "prec_dss" => prec_dρθ,
-        "prec_sld" => prec_SLD,
-        "prec_dsld" => prec_dSLD
+        # "dqfi" => dQFI,
+        "prec_ss" => real(prec_ρθ),
+        "prec_dss" => real(prec_dρθ),
+        "prec_sld" => real(prec_SLD)
+        # "prec_dsld" => prec_dSLD
     )
 end
 

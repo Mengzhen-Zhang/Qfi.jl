@@ -1,6 +1,7 @@
 using QuantumOptics
-using Optim
-using Qfi
+# using Optim
+include("../src/Qfi.jl")
+using .Qfi
 
 # ω_atom = 2
 # ω_field = 1
@@ -34,34 +35,37 @@ function get_liouv_dliouv(ω_atom, ω_field, Ω)
     return (liouv, dliouv)
 end
 
-function fg!(F, G, x)
-    # do common computations here
-    liouv, dliouv = get_liouv_dliouv(x...)
-    QFI = qfi(0.0, liouv, dliouv)
-    fval = QFI["qfi"]
-    Gval = QFI["dqfi"]
-    if G !== nothing
-        # writing the result to the vector G (gradient)
-        G .= -Gval              # Minus sign for maximization
-    end
-    if F !== nothing
-        # value = ... code to compute objective function
-        return -fval            # Minus sign for maximization
-    end
-end
+liouv, dliouv = get_liouv_dliouv(0.0, 0.0, 1.0)
+println(qfi(0.0, liouv, dliouv))
+
+# function fg!(F, G, x)
+#     # do common computations here
+#     liouv, dliouv = get_liouv_dliouv(x...)
+#     QFI = qfi(0.0, liouv, dliouv)
+#     fval = QFI["qfi"]
+#     Gval = QFI["dqfi"]
+#     if G !== nothing
+#         # writing the result to the vector G (gradient)
+#         G .= -Gval              # Minus sign for maximization
+#     end
+#     if F !== nothing
+#         # value = ... code to compute objective function
+#         return -fval            # Minus sign for maximization
+#     end
+# end
 
 # Use Fminbox algorithm for box constraint optimization
 # with LBFGS the inner optimzer
 # The option outer_iterations controls the number of interations
 # for Fminbox; the number of interations for LBFGS can
 # be controlled by inner_iterations
-res= Optim.optimize(Optim.only_fg!(fg!),
-                    [1.8, 0.8, 0.8], # lower bound
-                    [2.2, 1.2, 1.2], # upper bound
-                    [2.0, 1.0, 1.0], # initial guess
-                    Fminbox(LBFGS()), 
-                    Optim.Options(outer_iterations = 2))
+# res= Optim.optimize(Optim.only_fg!(fg!),
+#                     [1.8, 0.8, 0.8], # lower bound
+#                     [2.2, 1.2, 1.2], # upper bound
+#                     [2.0, 1.0, 1.0], # initial guess
+#                     Fminbox(LBFGS()), 
+#                     Optim.Options(outer_iterations = 2))
 
-println(res)
-# println(qfi(5.0, liouv, dliouv; indices=[2]))
+# println(res)
+# # println(qfi(5.0, liouv, dliouv; indices=[2]))
 # println(qfi(20.0, liouv, dliouv; indices=[1], n_sld=3))
