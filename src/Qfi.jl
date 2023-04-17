@@ -2,7 +2,7 @@ module Qfi
 
 import QuantumOptics
 import QuantumOptics: 
-       dagger, spre, spost, ptrace
+       dagger, spre, spost, ptrace, expect
 import QuantumOptics.QuantumOpticsBase: 
        SuperOperator, AbstractOperator, Operator
 import IterativeSolvers: bicgstabl!
@@ -76,7 +76,8 @@ The output is a dictionary with the following keys:
 'prec-dsld': the precision of the derivative of the SLD
 """
 function qfi(θ::Real, liouv::Function, dliouv::Function, d2liouv::Function;
-             indices=nothing)
+             indices=nothing,
+             ops=[])
     lθ = liouv(θ)
     dlθ = dliouv(θ)
     d2lθ = d2liouv(θ)
@@ -109,12 +110,13 @@ function qfi(θ::Real, liouv::Function, dliouv::Function, d2liouv::Function;
         # "dqfi" => dQFI,
         "prec_ss" => real(prec_ρθ),
         "prec_dss" => real(prec_dρθ),
-        "prec_sld" => real(prec_SLD)
+        "prec_sld" => real(prec_SLD),
+        "ops" => [expect(op, ρθ) for op in ops]
         # "prec_dsld" => prec_dSLD
     )
 end
 
-qfi(θ::Real, liouv::Function, dliouv::Function; indices=nothing)=
-    qfi(θ, liouv, dliouv, θ->(0*dliouv(θ)); indices=indices)
+qfi(θ::Real, liouv::Function, dliouv::Function; indices=nothing, ops=[])=
+    qfi(θ, liouv, dliouv, θ->(0*dliouv(θ)); indices=indices, ops=ops)
 
 end

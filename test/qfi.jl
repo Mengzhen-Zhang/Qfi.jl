@@ -36,7 +36,7 @@ function get_liouv_dliouv(ω_atom, ω_field, Ω)
 end
 
 liouv, dliouv = get_liouv_dliouv(0.0, 0.0, 1.0)
-println(qfi(0.0, liouv, dliouv))
+println(qfi(0.0, liouv, dliouv; ops=[]))
 
 # function fg!(F, G, x)
 #     # do common computations here
