@@ -32,11 +32,15 @@ function get_liouv_dliouv(ω_atom, ω_field, Ω)
     J = [embed(b, 1, a), embed(b, 2, sm)]
     liouv(θ) = liouvillian(H + θ * embed(b, 1, n),  J)
     dliouv(θ) = liouvillian(embed(b, 1, n), [])
-    return (liouv, dliouv)
+    d2liouv(θ) = liouvillian(0*embed(b, 1, n), [])
+    return (liouv, dliouv, d2liouv)
 end
 
-liouv, dliouv = get_liouv_dliouv(0.0, 0.0, 1.0)
-println(qfi(0.0, liouv, dliouv; ops=[]))
+liouv, dliouv, d2liouv = get_liouv_dliouv(0.0, 0.0, 1.0)
+output = qfi(0.0, liouv, dliouv, d2liouv; ops=[])
+# println(output["rho"])
+# println(output["drho"])
+println(output["d2rho"])
 
 # function fg!(F, G, x)
 #     # do common computations here

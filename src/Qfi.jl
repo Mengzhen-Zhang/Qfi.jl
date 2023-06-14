@@ -84,7 +84,7 @@ function qfi(θ::Real, liouv::Function, dliouv::Function, d2liouv::Function;
 
     ρθ = steadyState(lθ)
     dρθ = diffSteadyState(lθ, dlθ, ρθ)
-    # d2ρθ = diff2SteadyState(lθ, dlθ, d2lθ, ρθ, dρθ)
+    d2ρθ = diff2SteadyState(lθ, dlθ, d2lθ, ρθ, dρθ)
 
     prec_ρθ = hs_norm(lθ*ρθ)
     prec_dρθ = hs_norm(dlθ*ρθ+lθ*dρθ)
@@ -107,11 +107,13 @@ function qfi(θ::Real, liouv::Function, dliouv::Function, d2liouv::Function;
  
     return Dict{Any, Any}(
         "qfi" => QFI,
-        # "dqfi" => dQFI,
         "prec_ss" => real(prec_ρθ),
         "prec_dss" => real(prec_dρθ),
         "prec_sld" => real(prec_SLD),
-        "ops" => [expect(op, ρθ) for op in ops]
+        "ops" => [expect(op, ρθ) for op in ops],
+        "rho" => ρθ,
+        "drho" => dρθ,
+        "d2rho" => d2ρθ
         # "prec_dsld" => prec_dSLD
     )
 end
